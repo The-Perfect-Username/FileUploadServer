@@ -11,6 +11,27 @@ router.get('/', function(req, res, next) {
 });
 
 
+router.post('/submit/information', function(err, res) {
+    var params = {
+        'title': req.body.title,
+        'description': req.body.description,
+        'category_id': req.body.categoryId,
+        'privacy': req.body.privacy
+    }
+
+    Module.updateVideoInformation(params, function(err, response) {
+
+        if (response) {
+
+        } else {
+
+        }
+
+    });
+
+});
+
+
 // Upload a video file to uploads
 router.post('/submit', function(req, res) {
     // Throws and error if no files are found
@@ -22,7 +43,11 @@ router.post('/submit', function(req, res) {
     var uploadDirectory    = "uploads/";
     var thumbnailDirectory = "thumbnails/";
     var videoFile          = req.files.video_file;
-    var fileName           =  req.files.video_file.name;
+    var fileName           = (req.files.video_file.name).replace(/\s/g, '_');
+    var fileNameWithoutExt = fileName.substr(0, fileName.lastIndexOf('.'));
+
+    var url = "http://localhost:3001/";
+    var thumbnails = [];
 
     Module.createVideoRecord(userId, function(err, recordId) {
         if (err) {
@@ -54,14 +79,15 @@ router.post('/submit', function(req, res) {
 
                                 // Create the thumbnail directory for the video and store the potential thumbnails
                                 createDirectory(thumbnailDirectory, function(err, response) {
-                                    exec("ffmpeg -i " + uploadDirectory + "/" + fileName + " -vf " + fps + ",scale=-1:240 " + thumbnailDirectory + "/" + fileName + "_%03d.jpg", function(err, stdout, stderr) {
+
+                                    exec("ffmpeg -i " + uploadDirectory + "/" + fileName + " -vf " + fps + ",scale=720:-1 " + thumbnailDirectory + "/" + fileNameWithoutExt + "_%03d.jpg && ls " + thumbnailDirectory, function(err, stdout, stderr) {
                                         if (durerr) {
                                             res.send(durerr);
                                         } else {
-                                            if (stderr) {
-                                                res.send(stderr);
+                                            if (stdout) {
+                                                res.send((stdout.split('\n').pop()));
                                             } else {
-                                                res.send(stdout);
+                                                res.send(stderr);
                                             }
                                         }
                                     });
