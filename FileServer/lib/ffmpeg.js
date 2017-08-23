@@ -1,4 +1,5 @@
 var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
 
 module.exports = {
 
