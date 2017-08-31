@@ -9,11 +9,30 @@ module.exports = {
         });
     },
 
-    encode: function(src, dest, codec, scale, callback) {
-        var cmd = "ffmpeg -i " + src + " " + scale + " -c:v " + codec + " -c:a copy " + dest;
-        exec(cmd, function(err, stdout, stderr) {
-            callback(err, stdout);
+    encode: function(src, dest, scale, api_key, io, callback) {
+
+        var args = ['-i', src, '-vf', scale, '-c:v', 'libx264', '-crf', '23', '-c:a', 'copy', dest];
+        var ff = spawn('ffmpeg', args);
+
+        ff.stdout.on('data', (data) => {
+            console.log("Stdout: " + data);
         });
+
+        var prev = 0;
+
+        ff.stderr.on('data', (data) => {
+            if (data.indexOf('frame=') > -1) {
+                var val = parseInt(data.toString().split('=').filter(Boolean)[1].trim());
+                var diff = val - prev;
+                prev = val;
+                io.emit('process_' + api_key, diff);
+            }
+        });
+
+        ff.on('close', (code) => {
+            io.emit('done_' + api_key, {code: code, src: src});
+        });
+
     }
 
 };
